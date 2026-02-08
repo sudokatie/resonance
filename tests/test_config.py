@@ -115,3 +115,15 @@ def test_validate_config_invalid_p_threshold():
     config.analysis.p_threshold = 1.5
     errors = validate_config(config)
     assert any("p_threshold" in e for e in errors)
+
+
+def test_resonance_config_env_var(temp_dir, monkeypatch):
+    """RESONANCE_CONFIG env var overrides default config path."""
+    config_file = temp_dir / "custom_config.toml"
+    config_file.write_text("""
+[analysis]
+min_days = 99
+""")
+    monkeypatch.setenv("RESONANCE_CONFIG", str(config_file))
+    config = load_config()  # No path argument - should use env var
+    assert config.analysis.min_days == 99

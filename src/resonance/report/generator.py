@@ -33,7 +33,7 @@ def generate_report(
 
     Args:
         db: Database instance
-        period: 'week' or 'month'
+        period: 'week', 'month', 'quarter', or 'year'
         reference_date: Date to use as "today" (defaults to actual today)
 
     Returns:
@@ -45,7 +45,13 @@ def generate_report(
     if period == "week":
         start = (today - timedelta(days=7)).isoformat()
         end = today.isoformat()
-    else:  # month
+    elif period == "quarter":
+        start = (today - timedelta(days=90)).isoformat()
+        end = today.isoformat()
+    elif period == "year":
+        start = (today - timedelta(days=365)).isoformat()
+        end = today.isoformat()
+    else:  # month (default)
         start = (today - timedelta(days=30)).isoformat()
         end = today.isoformat()
 
@@ -99,7 +105,7 @@ def generate_report_from_df(
 
     Args:
         df: DataFrame with metrics as columns, date index
-        period: 'week' or 'month'
+        period: 'week', 'month', 'quarter', or 'year'
         reference_date: Date to use as "today" (defaults to actual today)
 
     Returns:
@@ -111,7 +117,13 @@ def generate_report_from_df(
     if period == "week":
         start = (today - timedelta(days=7)).isoformat()
         end = today.isoformat()
-    else:  # month
+    elif period == "quarter":
+        start = (today - timedelta(days=90)).isoformat()
+        end = today.isoformat()
+    elif period == "year":
+        start = (today - timedelta(days=365)).isoformat()
+        end = today.isoformat()
+    else:  # month (default)
         start = (today - timedelta(days=30)).isoformat()
         end = today.isoformat()
 

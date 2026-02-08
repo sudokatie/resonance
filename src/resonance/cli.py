@@ -124,7 +124,7 @@ def analyze(
         df = df[[c for c in df.columns if c in metric_list]]
 
     # Find correlations
-    patterns = find_all_correlations(df, max_lag=lag, min_correlation=min_correlation, p_threshold=p_threshold)
+    patterns = find_all_correlations(df, max_lag=lag, min_correlation=min_correlation, p_threshold=p_threshold, min_days=min_days)
 
     if not patterns:
         console.print("[yellow]No significant correlations found.[/yellow]")

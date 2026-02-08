@@ -75,6 +75,22 @@ class TestGenerateReport:
         assert report.date_range[0] == "2024-01-16"
         assert report.date_range[1] == "2024-02-15"
 
+    def test_generate_quarterly_report(self, sample_df):
+        """Should generate a quarterly report (90 days)."""
+        report = generate_report_from_df(
+            sample_df, period="quarter", reference_date=date(2024, 4, 1)
+        )
+        assert report.date_range[0] == "2024-01-02"
+        assert report.date_range[1] == "2024-04-01"
+
+    def test_generate_yearly_report(self, sample_df):
+        """Should generate a yearly report (365 days)."""
+        report = generate_report_from_df(
+            sample_df, period="year", reference_date=date(2024, 12, 31)
+        )
+        assert report.date_range[0] == "2024-01-01"
+        assert report.date_range[1] == "2024-12-31"
+
     def test_report_date_range_correct(self, sample_df):
         """Date range should match period."""
         report = generate_report_from_df(

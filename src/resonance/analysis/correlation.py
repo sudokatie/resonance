@@ -42,7 +42,7 @@ def calculate_confidence(r: float, p: float, n: int) -> str:
 
 
 def calculate_correlation(
-    df: pd.DataFrame, m1: str, m2: str, lag: int = 0
+    df: pd.DataFrame, m1: str, m2: str, lag: int = 0, min_days: int = 14
 ) -> Optional[CorrelationResult]:
     """Calculate Spearman correlation between two metrics.
 
@@ -51,6 +51,7 @@ def calculate_correlation(
         m1: First metric name
         m2: Second metric name
         lag: Days to lag m2 (positive = m2 shifted into future)
+        min_days: Minimum days of overlapping data required
 
     Returns:
         CorrelationResult or None if insufficient data
@@ -64,7 +65,7 @@ def calculate_correlation(
 
     # Align and drop NaN
     valid = pd.concat([x, y], axis=1).dropna()
-    if len(valid) < 14:
+    if len(valid) < min_days:
         return None
 
     r, p = spearmanr(valid.iloc[:, 0], valid.iloc[:, 1])
@@ -86,6 +87,7 @@ def find_all_correlations(
     max_lag: int = 1,
     min_correlation: float = 0.3,
     p_threshold: float = 0.05,
+    min_days: int = 14,
 ) -> list[CorrelationResult]:
     """Find all significant correlations between metrics.
 
@@ -94,6 +96,7 @@ def find_all_correlations(
         max_lag: Maximum lag days to check (0 to max_lag inclusive)
         min_correlation: Minimum absolute correlation to include
         p_threshold: Maximum p-value to include
+        min_days: Minimum days of overlapping data required
 
     Returns:
         List of CorrelationResults sorted by absolute correlation (descending)
@@ -103,7 +106,7 @@ def find_all_correlations(
 
     for m1, m2 in combinations(metrics, 2):
         for lag in range(max_lag + 1):
-            result = calculate_correlation(df, m1, m2, lag)
+            result = calculate_correlation(df, m1, m2, lag, min_days=min_days)
             if result and result.confidence != "none":
                 if (
                     abs(result.correlation) >= min_correlation

@@ -65,7 +65,11 @@ def load_config(path: Path | None = None) -> ResonanceConfig:
     
     # Determine config file path
     if path is None:
-        path = get_config_path()
+        # Check RESONANCE_CONFIG env var first
+        if config_env := os.environ.get("RESONANCE_CONFIG"):
+            path = Path(config_env).expanduser()
+        else:
+            path = get_config_path()
     
     # Load from file if exists
     if path.exists():

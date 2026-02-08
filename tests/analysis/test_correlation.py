@@ -58,11 +58,23 @@ class TestCalculateCorrelation:
         assert abs(result.correlation) < 0.5
 
     def test_insufficient_data_returns_none(self):
-        """Less than 14 days should return None."""
+        """Less than 14 days should return None by default."""
         dates = pd.date_range("2024-01-01", periods=10)
         df = pd.DataFrame({"a": range(10), "b": range(10)}, index=dates)
         result = calculate_correlation(df, "a", "b")
         assert result is None
+
+    def test_min_days_parameter(self):
+        """Should respect custom min_days parameter."""
+        dates = pd.date_range("2024-01-01", periods=10)
+        df = pd.DataFrame({"a": range(10), "b": range(10)}, index=dates)
+        # With default min_days=14, this returns None
+        result_default = calculate_correlation(df, "a", "b", min_days=14)
+        assert result_default is None
+        # With min_days=5, this should work
+        result_low = calculate_correlation(df, "a", "b", min_days=5)
+        assert result_low is not None
+        assert result_low.correlation > 0.9
 
     def test_no_overlap_returns_none(self):
         """Non-overlapping data should return None."""
@@ -176,6 +188,19 @@ class TestFindAllCorrelations:
         results = find_all_correlations(df)
         # Should work, just with fewer samples
         assert isinstance(results, list)
+
+    def test_min_days_parameter(self):
+        """Should respect custom min_days parameter."""
+        # Use 20 data points - enough for low confidence with default
+        # but test that min_days=25 would exclude them
+        dates = pd.date_range("2024-01-01", periods=20)
+        df = pd.DataFrame({"a": range(20), "b": range(20)}, index=dates)
+        # With min_days=25, no results (only 20 points)
+        results_high = find_all_correlations(df, min_days=25)
+        assert len(results_high) == 0
+        # With default min_days=14, should find correlation
+        results_default = find_all_correlations(df, min_days=14)
+        assert len(results_default) > 0
 
 
 class TestApplyBonferroni:
