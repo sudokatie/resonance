@@ -1,9 +1,23 @@
 """CLI entry point for Resonance."""
 
+from datetime import date
+from pathlib import Path
+from typing import Optional
+
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from . import __version__
+from .config import load_config
+from .database import Database
+from .ingest.health import import_health
+from .ingest.manual import log_metric, parse_tags
+from .analysis.correlation import find_all_correlations, CorrelationResult
+from .models import PatternRecord
+from .analysis.patterns import find_weekday_patterns, find_all_anomalies
+from .analysis.trends import find_all_trends
+from .report.generator import generate_report, format_text, format_json, format_markdown
 
 app = typer.Typer(
     name="resonance",
@@ -19,11 +33,21 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
+def get_db() -> Database:
+    """Get database instance from config."""
+    config = load_config()
+    return Database(config.db_path)
+
+
 @app.callback()
 def main(
     version: bool = typer.Option(
-        None, "--version", "-v", callback=version_callback, is_eager=True,
-        help="Show version and exit."
+        None,
+        "--version",
+        "-v",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit.",
     ),
 ) -> None:
     """Resonance - Find patterns in your life."""
@@ -34,50 +58,175 @@ def main(
 def ingest(
     source: str = typer.Argument(..., help="Data source (health)"),
     path: str = typer.Argument(..., help="Path to data file"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be imported"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show what would be imported"
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-V", help="Verbose output"),
 ) -> None:
     """Import data from a source."""
-    console.print(f"[yellow]ingest not yet implemented[/yellow]")
+    db = get_db()
+    file_path = Path(path)
+
+    if not file_path.exists():
+        console.print(f"[red]File not found: {path}[/red]")
+        raise typer.Exit(1)
+
+    if source == "health":
+        count = import_health(db, file_path, dry_run=dry_run)
+        if dry_run:
+            console.print(f"[yellow]Would import {count} daily metrics[/yellow]")
+        else:
+            console.print(f"[green]Imported {count} daily metrics from Apple Health[/green]")
+    else:
+        console.print(f"[red]Unknown source: {source}[/red]")
+        console.print("Supported sources: health")
+        raise typer.Exit(1)
 
 
 @app.command()
 def log(
     metric: str = typer.Argument(..., help="Metric name (e.g., mood, energy)"),
     value: float = typer.Argument(..., help="Metric value"),
-    note: str = typer.Option(None, "--note", "-n", help="Optional note"),
-    tags: str = typer.Option(None, "--tags", "-t", help="Comma-separated tags"),
+    note: Optional[str] = typer.Option(None, "--note", "-n", help="Optional note"),
+    tags: Optional[str] = typer.Option(None, "--tags", "-t", help="Comma-separated tags"),
 ) -> None:
-    """Log a manual metric value."""
-    console.print(f"[yellow]log not yet implemented[/yellow]")
+    """Log a manual metric value for today."""
+    db = get_db()
+    tag_list = parse_tags(tags) if tags else None
+
+    log_metric(db, metric, value, note=note, tags=tag_list)
+    today = date.today().isoformat()
+    console.print(f"[green]Logged {metric}={value} for {today}[/green]")
 
 
 @app.command()
 def analyze(
-    from_date: str = typer.Option(None, "--from", help="Start date (YYYY-MM-DD)"),
-    to_date: str = typer.Option(None, "--to", help="End date (YYYY-MM-DD)"),
-    metrics: str = typer.Option(None, "--metrics", help="Comma-separated metrics to analyze"),
+    from_date: Optional[str] = typer.Option(None, "--from", help="Start date (YYYY-MM-DD)"),
+    to_date: Optional[str] = typer.Option(None, "--to", help="End date (YYYY-MM-DD)"),
+    metrics: Optional[str] = typer.Option(
+        None, "--metrics", help="Comma-separated metrics to analyze"
+    ),
     min_days: int = typer.Option(14, "--min-days", help="Minimum days of data required"),
     lag: int = typer.Option(1, "--lag", help="Maximum lag days for correlation"),
+    save: bool = typer.Option(False, "--save", help="Save patterns to database"),
 ) -> None:
     """Run correlation analysis."""
-    console.print(f"[yellow]analyze not yet implemented[/yellow]")
+    db = get_db()
+    df = db.get_metrics_df(from_date, to_date)
+
+    if df.empty:
+        console.print("[yellow]No data found for the specified range.[/yellow]")
+        raise typer.Exit(0)
+
+    # Filter metrics if specified
+    if metrics:
+        metric_list = [m.strip() for m in metrics.split(",")]
+        df = df[[c for c in df.columns if c in metric_list]]
+
+    # Find correlations
+    patterns = find_all_correlations(df, max_lag=lag)
+
+    if not patterns:
+        console.print("[yellow]No significant correlations found.[/yellow]")
+        raise typer.Exit(0)
+
+    # Display results
+    table = Table(title="Correlations")
+    table.add_column("Metric 1")
+    table.add_column("Metric 2")
+    table.add_column("Correlation")
+    table.add_column("Lag")
+    table.add_column("Confidence")
+
+    for p in patterns[:10]:  # Top 10
+        table.add_row(
+            p.metric1,
+            p.metric2,
+            f"{p.correlation:+.2f}",
+            f"{p.lag_days}d",
+            p.confidence,
+        )
+
+    console.print(table)
+    console.print(f"\nFound {len(patterns)} correlations total.")
+
+    # Save if requested
+    if save:
+        for p in patterns:
+            pattern = PatternRecord(
+                metric1=p.metric1,
+                metric2=p.metric2,
+                correlation=p.correlation,
+                p_value=p.p_value,
+                lag_days=p.lag_days,
+                sample_size=p.sample_size,
+                confidence=p.confidence,
+            )
+            db.insert_pattern(pattern)
+        console.print(f"[green]Saved {len(patterns)} patterns to database.[/green]")
 
 
 @app.command()
 def report(
     period: str = typer.Option("week", "--period", "-p", help="Report period (week, month)"),
-    format: str = typer.Option("text", "--format", "-f", help="Output format (text, json, markdown)"),
-    output: str = typer.Option(None, "--output", "-o", help="Output file path"),
+    fmt: str = typer.Option("text", "--format", "-f", help="Output format (text, json, markdown)"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path"),
 ) -> None:
     """Generate pattern report."""
-    console.print(f"[yellow]report not yet implemented[/yellow]")
+    db = get_db()
+    rpt = generate_report(db, period=period)
+
+    if fmt == "json":
+        result = format_json(rpt)
+    elif fmt == "markdown":
+        result = format_markdown(rpt)
+    else:
+        result = format_text(rpt)
+
+    if output:
+        Path(output).write_text(result)
+        console.print(f"[green]Report saved to {output}[/green]")
+    else:
+        console.print(result)
 
 
 @app.command()
 def status() -> None:
     """Show data overview."""
-    console.print(f"[yellow]status not yet implemented[/yellow]")
+    db = get_db()
+
+    # Get metrics
+    metrics = db.get_metric_names()
+    if not metrics:
+        console.print("[yellow]No data yet. Use 'resonance ingest' or 'resonance log' to add data.[/yellow]")
+        raise typer.Exit(0)
+
+    # Get date range
+    date_range = db.get_date_range()
+
+    # Display status
+    console.print("[bold]Resonance Status[/bold]\n")
+
+    if date_range:
+        console.print(f"Date range: {date_range[0]} to {date_range[1]}")
+
+    table = Table(title="Metrics")
+    table.add_column("Metric")
+    table.add_column("Days")
+    table.add_column("Latest")
+
+    for metric in metrics:
+        count = db.get_metric_count(metric)
+        metric_range = db.get_date_range(metric)
+        latest = metric_range[1] if metric_range else "N/A"
+        table.add_row(metric, str(count), latest)
+
+    console.print(table)
+
+    # Pattern count
+    patterns = db.get_patterns()
+    if patterns:
+        console.print(f"\nStored patterns: {len(patterns)}")
 
 
 if __name__ == "__main__":
