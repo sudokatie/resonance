@@ -70,7 +70,10 @@ def ingest(
         raise typer.Exit(1)
 
     if source == "health":
-        count = import_health(db, file_path, dry_run=dry_run)
+        count = import_health(db, file_path, dry_run=dry_run, verbose=verbose, console=console if verbose else None)
+        if count == 0:
+            console.print("[yellow]No supported health data found in export[/yellow]")
+            raise typer.Exit(0)
         if dry_run:
             console.print(f"[yellow]Would import {count} daily metrics[/yellow]")
         else:
@@ -193,40 +196,44 @@ def report(
 @app.command()
 def status() -> None:
     """Show data overview."""
-    db = get_db()
+    config = load_config()
+    db = Database(config.db_path)
+
+    # Display status header
+    console.print("[bold]Resonance Data Status[/bold]")
+    console.print("=" * 40)
+
+    # Database info
+    db_path = config.db_path
+    if db_path.exists():
+        db_size_bytes = db_path.stat().st_size
+        db_size_mb = db_size_bytes / (1024 * 1024)
+        console.print(f"Database: {db_path} ({db_size_mb:.1f} MB)")
+    else:
+        console.print(f"Database: {db_path} (not created)")
 
     # Get metrics
     metrics = db.get_metric_names()
     if not metrics:
-        console.print("[yellow]No data yet. Use 'resonance ingest' or 'resonance log' to add data.[/yellow]")
+        console.print("\n[yellow]No data yet. Use 'resonance ingest' or 'resonance log' to add data.[/yellow]")
         raise typer.Exit(0)
 
-    # Get date range
-    date_range = db.get_date_range()
-
-    # Display status
-    console.print("[bold]Resonance Status[/bold]\n")
-
-    if date_range:
-        console.print(f"Date range: {date_range[0]} to {date_range[1]}")
-
-    table = Table(title="Metrics")
-    table.add_column("Metric")
-    table.add_column("Days")
-    table.add_column("Latest")
-
+    # Metrics table
+    console.print("\nMetrics:")
     for metric in metrics:
         count = db.get_metric_count(metric)
         metric_range = db.get_date_range(metric)
-        latest = metric_range[1] if metric_range else "N/A"
-        table.add_row(metric, str(count), latest)
+        if metric_range:
+            console.print(f"  {metric}: {count} days ({metric_range[0]} - {metric_range[1]})")
+        else:
+            console.print(f"  {metric}: {count} days")
 
-    console.print(table)
-
-    # Pattern count
+    # Pattern count and last analysis
     patterns = db.get_patterns()
-    if patterns:
-        console.print(f"\nStored patterns: {len(patterns)}")
+    last_analysis = db.get_last_analysis_date()
+    console.print(f"\nRecent Patterns Found: {len(patterns)}")
+    if last_analysis:
+        console.print(f"Last Analysis: {last_analysis}")
 
 
 if __name__ == "__main__":

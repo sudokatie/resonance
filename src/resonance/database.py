@@ -343,3 +343,18 @@ class Database:
         else:
             cursor = self.conn.execute("SELECT COUNT(*) FROM metrics")
         return cursor.fetchone()[0]
+
+    def get_last_analysis_date(self) -> str | None:
+        """Get the timestamp of the most recent analysis.
+        
+        Returns:
+            ISO timestamp string or None if no analyses exist.
+        """
+        cursor = self.conn.execute(
+            "SELECT MAX(discovered_at) FROM patterns"
+        )
+        row = cursor.fetchone()
+        if row and row[0]:
+            # Format as date/time without microseconds
+            return row[0][:16].replace("T", " ")
+        return None

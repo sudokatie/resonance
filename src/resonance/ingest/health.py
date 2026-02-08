@@ -152,6 +152,8 @@ def import_health(
     db: Database,
     path: Path,
     dry_run: bool = False,
+    verbose: bool = False,
+    console: any = None,
 ) -> int:
     """Import Apple Health export to database.
     
@@ -159,6 +161,8 @@ def import_health(
         db: Database instance.
         path: Path to export.xml file.
         dry_run: If True, don't actually insert.
+        verbose: If True, log each metric being processed.
+        console: Rich console for verbose output.
         
     Returns:
         Number of daily metrics imported.
@@ -169,6 +173,10 @@ def import_health(
     # Parse and aggregate
     records = parse_health_export(path)
     daily_metrics = aggregate_daily(records)
+    
+    if verbose and console:
+        for metric in daily_metrics:
+            console.print(f"  {metric.date}: {metric.metric_name} = {metric.value:.2f}")
     
     if dry_run:
         return len(daily_metrics)

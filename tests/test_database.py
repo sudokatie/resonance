@@ -272,3 +272,29 @@ def test_get_metric_count(db):
     
     assert db.get_metric_count() == 3
     assert db.get_metric_count(metric="steps") == 2
+
+
+def test_get_last_analysis_date_no_patterns(db):
+    """Returns None when no patterns exist."""
+    result = db.get_last_analysis_date()
+    assert result is None
+
+
+def test_get_last_analysis_date_with_patterns(db):
+    """Returns the most recent discovered_at timestamp."""
+    pattern = PatternRecord(
+        metric1="steps",
+        metric2="mood",
+        correlation=0.5,
+        p_value=0.01,
+        lag_days=0,
+        sample_size=30,
+        confidence="high",
+    )
+    db.insert_pattern(pattern)
+    
+    result = db.get_last_analysis_date()
+    assert result is not None
+    # Should be a date-like string (format: YYYY-MM-DD HH:MM)
+    assert len(result) == 16
+    assert "-" in result
