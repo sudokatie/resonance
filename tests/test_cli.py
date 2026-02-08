@@ -81,3 +81,27 @@ class TestCLI:
         result = runner.invoke(app, ["report", "--format", "markdown"])
         assert result.exit_code == 0
         assert "#" in result.output  # Markdown headers
+
+    def test_analyze_p_threshold_flag(self, tmp_path, monkeypatch):
+        """Should accept --p-threshold flag."""
+        monkeypatch.setenv("RESONANCE_DB_PATH", str(tmp_path / "test.db"))
+        result = runner.invoke(app, ["analyze", "--p-threshold", "0.01"])
+        assert result.exit_code == 0
+
+    def test_analyze_min_correlation_flag(self, tmp_path, monkeypatch):
+        """Should accept --min-correlation flag."""
+        monkeypatch.setenv("RESONANCE_DB_PATH", str(tmp_path / "test.db"))
+        result = runner.invoke(app, ["analyze", "--min-correlation", "0.5"])
+        assert result.exit_code == 0
+
+    def test_analyze_all_flags(self, tmp_path, monkeypatch):
+        """Should accept all analyze flags together."""
+        monkeypatch.setenv("RESONANCE_DB_PATH", str(tmp_path / "test.db"))
+        result = runner.invoke(app, [
+            "analyze",
+            "--min-days", "7",
+            "--p-threshold", "0.01",
+            "--min-correlation", "0.5",
+            "--lag", "3",
+        ])
+        assert result.exit_code == 0

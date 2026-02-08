@@ -105,6 +105,8 @@ def analyze(
         None, "--metrics", help="Comma-separated metrics to analyze"
     ),
     min_days: int = typer.Option(14, "--min-days", help="Minimum days of data required"),
+    p_threshold: float = typer.Option(0.05, "--p-threshold", help="P-value threshold"),
+    min_correlation: float = typer.Option(0.3, "--min-correlation", help="Minimum correlation strength"),
     lag: int = typer.Option(1, "--lag", help="Maximum lag days for correlation"),
     save: bool = typer.Option(False, "--save", help="Save patterns to database"),
 ) -> None:
@@ -122,7 +124,7 @@ def analyze(
         df = df[[c for c in df.columns if c in metric_list]]
 
     # Find correlations
-    patterns = find_all_correlations(df, max_lag=lag)
+    patterns = find_all_correlations(df, max_lag=lag, min_correlation=min_correlation, p_threshold=p_threshold)
 
     if not patterns:
         console.print("[yellow]No significant correlations found.[/yellow]")
