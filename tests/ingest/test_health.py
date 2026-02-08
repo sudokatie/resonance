@@ -2,7 +2,6 @@
 
 import pytest
 from pathlib import Path
-from datetime import datetime
 
 from resonance.ingest.health import (
     parse_date,
@@ -10,9 +9,7 @@ from resonance.ingest.health import (
     aggregate_daily,
     import_health,
     get_supported_metrics,
-    SUPPORTED_TYPES,
 )
-from resonance.models import HealthRecord
 from resonance.database import Database
 
 

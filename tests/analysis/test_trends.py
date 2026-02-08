@@ -7,7 +7,6 @@ import pandas as pd
 import pytest
 
 from resonance.analysis.trends import (
-    TrendResult,
     compare_periods,
     find_all_trends,
     month_over_month,

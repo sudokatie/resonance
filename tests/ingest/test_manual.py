@@ -1,7 +1,6 @@
 """Tests for manual metric logging."""
 
 import pytest
-from datetime import date
 
 from resonance.ingest.manual import (
     log_metric,

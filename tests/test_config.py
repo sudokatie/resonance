@@ -1,14 +1,10 @@
 """Tests for configuration loading."""
 
-import os
-import pytest
 from pathlib import Path
 
 from resonance.config import (
     ResonanceConfig,
-    AnalysisConfig,
     get_default_config,
-    get_config_path,
     load_config,
     validate_config,
 )

@@ -9,7 +9,6 @@ from resonance.models import (
     EventRecord,
     HealthRecord,
     metric_record_from_dict,
-    pattern_record_from_dict,
     event_record_from_dict,
 )
 

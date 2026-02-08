@@ -1,7 +1,6 @@
 """Tests for database operations."""
 
 import pytest
-from pathlib import Path
 
 from resonance.database import Database
 from resonance.models import MetricRecord, PatternRecord, EventRecord

@@ -1,9 +1,7 @@
 """Tests for CLI commands."""
 
-from pathlib import Path
 from typer.testing import CliRunner
 
-import pytest
 
 from resonance.cli import app
 

@@ -6,8 +6,6 @@ import pytest
 
 from resonance.analysis.patterns import (
     WEEKDAY_NAMES,
-    Anomaly,
-    WeekdayPattern,
     find_all_anomalies,
     find_anomalies,
     find_weekday_patterns,

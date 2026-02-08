@@ -1,6 +1,5 @@
 """Tests for natural language templates."""
 
-import pytest
 
 from resonance.analysis.correlation import CorrelationResult
 from resonance.analysis.patterns import WeekdayPattern
