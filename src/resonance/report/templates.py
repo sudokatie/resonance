@@ -26,12 +26,14 @@ def describe_correlation(r: CorrelationResult) -> str:
     """
     direction = "higher" if r.correlation > 0 else "lower"
     strength = "strongly" if abs(r.correlation) > 0.5 else "moderately"
+    # Effect size as percentage (correlation squared * 100 for variance explained)
+    effect_pct = abs(round(r.correlation * 100))
 
     if r.lag_days == 0:
         return (
             f"{r.metric1} {strength} correlates with {r.metric2} "
             f"(r={r.correlation:.2f}). "
-            f"When {r.metric1} is higher, {r.metric2} tends to be {direction}."
+            f"When {r.metric1} is higher, {r.metric2} tends to be {direction} by {effect_pct}%."
         )
     else:
         return (
@@ -56,11 +58,12 @@ def describe_weekday_pattern(p: WeekdayPattern) -> str:
     return f"{day_name}s show {pct}% {direction} {p.metric} than average."
 
 
-def describe_trend(t: TrendResult) -> str:
+def describe_trend(t: TrendResult, period: str = "week") -> str:
     """Generate natural language description of a trend.
 
     Args:
         t: Trend result to describe
+        period: Time period for comparison (week, month, etc.)
 
     Returns:
         Human-readable description
@@ -70,7 +73,7 @@ def describe_trend(t: TrendResult) -> str:
 
     verb = "increased" if t.direction == "up" else "decreased"
     pct = abs(round(t.change_pct))
-    return f"Your {t.metric} {verb} by {pct}% this period."
+    return f"Your {t.metric} {verb} by {pct}% this {period} compared to last {period}."
 
 
 def describe_data_quality(quality: dict[str, tuple[int, int]]) -> str:

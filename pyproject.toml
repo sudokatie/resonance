@@ -5,7 +5,7 @@ description = "Find patterns in your life"
 authors = [{name = "Katie"}]
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "typer>=0.9.0",
     "rich>=13.0.0",
