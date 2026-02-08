@@ -13,10 +13,8 @@ from .config import load_config
 from .database import Database
 from .ingest.health import import_health
 from .ingest.manual import log_metric, parse_tags
-from .analysis.correlation import find_all_correlations, CorrelationResult
+from .analysis.correlation import find_all_correlations
 from .models import PatternRecord
-from .analysis.patterns import find_weekday_patterns, find_all_anomalies
-from .analysis.trends import find_all_trends
 from .report.generator import generate_report, format_text, format_json, format_markdown
 
 app = typer.Typer(

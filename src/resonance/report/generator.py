@@ -240,7 +240,7 @@ def format_markdown(report: Report) -> str:
         Markdown string
     """
     lines = []
-    lines.append(f"# Resonance Report")
+    lines.append("# Resonance Report")
     lines.append(f"**Period:** {report.date_range[0]} to {report.date_range[1]}")
     lines.append("")
 

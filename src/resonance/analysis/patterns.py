@@ -1,7 +1,6 @@
 """Pattern detection for weekday effects and anomalies."""
 
 from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 from scipy.stats import ttest_ind
