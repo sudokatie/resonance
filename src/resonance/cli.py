@@ -168,7 +168,7 @@ def analyze(
 
 @app.command()
 def report(
-    period: str = typer.Option("week", "--period", "-p", help="Report period (week, month)"),
+    period: str = typer.Option("week", "--period", "-p", help="Report period (week, month, quarter, year)"),
     fmt: str = typer.Option("text", "--format", "-f", help="Output format (text, json, markdown)"),
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path"),
 ) -> None:
