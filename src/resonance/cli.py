@@ -16,6 +16,7 @@ from .ingest.manual import log_metric, parse_tags
 from .analysis.correlation import find_all_correlations
 from .models import PatternRecord
 from .report.generator import generate_report, format_text, format_json, format_markdown
+from .report.daily import run_daily, load_daily_config
 
 app = typer.Typer(
     name="resonance",
@@ -191,6 +192,44 @@ def report(
         console.print(f"[green]Report saved to {output}[/green]")
     else:
         console.print(result)
+
+
+@app.command()
+def daily(
+    delivery: Optional[str] = typer.Option(
+        None,
+        "--delivery",
+        "-d",
+        help="Delivery method (stdout, file, email, notification)",
+    ),
+    force: bool = typer.Option(False, "--force", "-f", help="Generate even with insufficient data"),
+) -> None:
+    """Generate and deliver daily report.
+    
+    By default uses config from ~/.config/resonance/config.yaml.
+    Override delivery method with --delivery.
+    
+    For email delivery, set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS,
+    and SMTP_FROM environment variables.
+    
+    Example cron entry for 8 AM daily:
+        0 8 * * * resonance daily --delivery email
+    """
+    config = load_daily_config()
+    
+    if delivery:
+        config.delivery = delivery
+    
+    db = get_db()
+    success = run_daily(delivery=delivery, force=force)
+    
+    if not success:
+        console.print("[yellow]No report generated (insufficient data or delivery failed).[/yellow]")
+        console.print("Use --force to generate anyway, or add more data first.")
+        raise typer.Exit(1)
+    
+    if delivery != "stdout":
+        console.print("[green]Daily report delivered successfully.[/green]")
 
 
 @app.command()

@@ -32,6 +32,7 @@ resonance report
 - **Weekday patterns** - Your Tuesday problem, quantified
 - **Trend tracking** - Week-over-week, month-over-month
 - **Natural language reports** - Insights you can understand
+- **Automated daily reports** - Scheduled delivery via email, file, or notification
 
 ## Installation
 
@@ -93,6 +94,47 @@ resonance report --period month --format json
 
 # Save to file
 resonance report --output ~/reports/weekly.md --format markdown
+```
+
+### Automated Daily Reports
+
+```bash
+# Generate and print daily report
+resonance daily
+
+# Save to file
+resonance daily --delivery file
+
+# Send via email (requires SMTP env vars)
+resonance daily --delivery email
+
+# Force generation even with limited data
+resonance daily --force
+```
+
+Configure in `~/.config/resonance/config.toml`:
+
+```toml
+[daily]
+enabled = true
+delivery = "email"            # stdout, file, email, notification
+email_to = "you@example.com"
+min_data_days = 7
+include_trends = true
+include_correlations = true
+include_weekday = true
+```
+
+For email delivery, set environment variables:
+- `SMTP_HOST` - SMTP server hostname
+- `SMTP_PORT` - SMTP port (default: 587)
+- `SMTP_USER` - SMTP username
+- `SMTP_PASS` - SMTP password
+- `SMTP_FROM` - From address
+
+Example cron entry for 8 AM daily:
+```bash
+0 8 * * * resonance daily --delivery email
 ```
 
 ### Check Status
