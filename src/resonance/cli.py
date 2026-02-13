@@ -16,6 +16,7 @@ from .ingest.manual import log_metric, parse_tags
 from .analysis.correlation import find_all_correlations
 from .models import PatternRecord
 from .report.generator import generate_report, format_text, format_json, format_markdown
+from .report.html import format_html
 from .report.daily import run_daily, load_daily_config
 
 app = typer.Typer(
@@ -173,8 +174,9 @@ def analyze(
 @app.command()
 def report(
     period: str = typer.Option("week", "--period", "-p", help="Report period (week, month, quarter, year)"),
-    fmt: str = typer.Option("text", "--format", "-f", help="Output format (text, json, markdown)"),
+    fmt: str = typer.Option("text", "--format", "-f", help="Output format (text, json, markdown, html)"),
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Output file path"),
+    title: Optional[str] = typer.Option(None, "--title", help="Report title (HTML only)"),
 ) -> None:
     """Generate pattern report."""
     db = get_db()
@@ -184,6 +186,11 @@ def report(
         result = format_json(rpt)
     elif fmt == "markdown":
         result = format_markdown(rpt)
+    elif fmt == "html":
+        # Get DataFrame for sparklines
+        df = db.get_metrics_df()
+        report_title = title or f"Resonance Report - {period.capitalize()}"
+        result = format_html(rpt, df=df, title=report_title)
     else:
         result = format_text(rpt)
 
