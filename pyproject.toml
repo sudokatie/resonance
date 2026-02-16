@@ -19,10 +19,14 @@ dependencies = [
 resonance = "resonance.cli:app"
 
 [project.optional-dependencies]
+api = [
+    "httpx>=0.25.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.1.0",
+    "httpx>=0.25.0",
 ]
 
 [build-system]

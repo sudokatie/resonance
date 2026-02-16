@@ -25,7 +25,7 @@ resonance report
 
 ## Features
 
-- **Apple Health import** - Steps, sleep, heart rate, weight
+- **Multiple data sources** - Apple Health, Google Fit, Fitbit, Oura Ring
 - **Manual logging** - Mood, energy, custom metrics
 - **Correlation analysis** - Find what affects what
 - **Lagged effects** - Does X today affect Y tomorrow?
@@ -51,12 +51,68 @@ pip install -e .
 
 ## Usage
 
-### Import Apple Health Data
+### Data Sources
 
-Export your data from the Health app on iPhone (Profile > Export All Health Data), then:
+Resonance supports multiple fitness and health data sources.
+
+#### Apple Health
+
+Export your data from the Health app on iPhone (Profile > Export All Health Data):
 
 ```bash
 resonance ingest health ~/Downloads/export.xml
+```
+
+Imports: steps, distance, calories, sleep, heart rate, weight.
+
+#### Google Fit
+
+Requires OAuth setup. Create credentials at [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+
+```bash
+# First time - opens browser for authorization
+resonance ingest google-fit --client-id YOUR_ID --client-secret YOUR_SECRET
+
+# After authorization, credentials are saved
+resonance ingest google-fit --days 30
+```
+
+Imports: steps, distance, calories, sleep, heart rate, weight.
+
+#### Fitbit
+
+Requires OAuth setup. Create an app at [Fitbit Developer](https://dev.fitbit.com/apps):
+
+```bash
+# First time - opens browser for authorization
+resonance ingest fitbit --client-id YOUR_ID --client-secret YOUR_SECRET
+
+# After authorization, credentials are saved
+resonance ingest fitbit --days 30
+```
+
+Imports: steps, distance, calories, sleep, heart rate, weight.
+
+#### Oura Ring
+
+Get a personal access token from [Oura Cloud](https://cloud.ouraring.com/personal-access-tokens):
+
+```bash
+# First time - saves token for future use
+resonance ingest oura --token YOUR_TOKEN
+
+# After that, just specify days
+resonance ingest oura --days 30
+```
+
+Imports: sleep metrics (hours, efficiency, deep/REM/light sleep, HRV), readiness score, temperature deviation, steps, calories, distance.
+
+#### API Sources Dependencies
+
+Google Fit, Fitbit, and Oura require the `httpx` library:
+
+```bash
+pip install "resonance[api]"
 ```
 
 ### Log Manual Metrics
