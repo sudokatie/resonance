@@ -32,6 +32,7 @@ resonance report
 - **Weekday patterns** - Your Tuesday problem, quantified
 - **Trend tracking** - Week-over-week, month-over-month
 - **Natural language reports** - Insights you can understand
+- **HTML reports** - Self-contained reports with sparkline charts and visualizations
 - **Automated daily reports** - Scheduled delivery via email, file, or notification
 
 ## Installation
@@ -147,6 +148,9 @@ resonance report
 
 # Monthly JSON report
 resonance report --period month --format json
+
+# HTML report with charts
+resonance report --format html --output ~/reports/weekly.html
 
 # Save to file
 resonance report --output ~/reports/weekly.md --format markdown
