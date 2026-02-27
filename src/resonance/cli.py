@@ -21,6 +21,7 @@ from .models import PatternRecord
 from .report.generator import generate_report, format_text, format_json, format_markdown
 from .report.html import format_html
 from .report.daily import run_daily, load_daily_config
+from .report.tui import render_dashboard, render_correlation_heatmap
 
 app = typer.Typer(
     name="resonance",
@@ -318,6 +319,27 @@ def daily(
     
     if delivery != "stdout":
         console.print("[green]Daily report delivered successfully.[/green]")
+
+
+@app.command()
+def dashboard(
+    period: str = typer.Option("week", "--period", "-p", help="Report period (week, month, quarter, year)"),
+    heatmap: bool = typer.Option(False, "--heatmap", "-m", help="Show correlation heatmap"),
+) -> None:
+    """Show interactive TUI dashboard.
+    
+    Displays patterns, trends, weekday effects, and data quality
+    in a rich terminal interface.
+    
+    Use --heatmap to show correlation matrix visualization.
+    """
+    db = get_db()
+    rpt = generate_report(db, period=period)
+    
+    if heatmap:
+        render_correlation_heatmap(rpt, console=console)
+    else:
+        render_dashboard(rpt, console=console)
 
 
 @app.command()
