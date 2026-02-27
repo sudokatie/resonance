@@ -156,6 +156,25 @@ resonance report --format html --output ~/reports/weekly.html
 resonance report --output ~/reports/weekly.md --format markdown
 ```
 
+### TUI Dashboard
+
+```bash
+# Show interactive terminal dashboard
+resonance dashboard
+
+# Monthly view
+resonance dashboard --period month
+
+# Show correlation heatmap
+resonance dashboard --heatmap
+```
+
+The dashboard displays:
+- Patterns with color-coded correlations
+- Weekday effects with significance indicators
+- Trends with direction arrows
+- Data quality metrics with progress bars
+
 ### Automated Daily Reports
 
 ```bash
