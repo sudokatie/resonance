@@ -120,3 +120,42 @@ def validate_metric_value(metric: str, value: float) -> tuple[bool, str]:
         return False, f"{metric} cannot be negative"
     
     return True, ""
+
+
+def get_today_entries(db: Database) -> list[dict]:
+    """Get all metric entries for today.
+    
+    Args:
+        db: Database instance.
+        
+    Returns:
+        List of entry dicts with id, metric, value, note, tags.
+    """
+    today = date.today().isoformat()
+    metrics = db.get_metrics(from_date=today, to_date=today, source="manual")
+    
+    entries = []
+    for m in metrics:
+        entries.append({
+            "id": m.id or len(entries),
+            "metric": m.metric_name,
+            "value": m.value,
+            "note": None,  # Notes stored separately in events
+            "tags": [],
+            "date": m.date,
+        })
+    
+    return entries
+
+
+def delete_entry(db: Database, entry_id: int) -> bool:
+    """Delete a metric entry by ID.
+    
+    Args:
+        db: Database instance.
+        entry_id: Entry ID to delete.
+        
+    Returns:
+        True if deleted, False otherwise.
+    """
+    return db.delete_metric(entry_id)

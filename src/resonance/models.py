@@ -15,6 +15,7 @@ class MetricRecord:
     metric_name: str
     value: float
     source: str  # 'apple_health', 'manual', etc.
+    id: int | None = None  # Optional database row ID
     
     def __post_init__(self) -> None:
         """Validate date format."""

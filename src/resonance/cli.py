@@ -13,6 +13,7 @@ from .config import load_config
 from .database import Database
 from .ingest.health import import_health
 from .ingest.manual import log_metric, parse_tags
+from .tui import interactive_log, quick_log
 from .ingest.google_fit import import_google_fit
 from .ingest.fitbit import import_fitbit
 from .ingest.oura import import_oura
@@ -182,6 +183,22 @@ def log(
     log_metric(db, metric, value, note=note, tags=tag_list)
     today = date.today().isoformat()
     console.print(f"[green]Logged {metric}={value} for {today}[/green]")
+
+
+@app.command("log-tui")
+def log_tui(
+    quick: bool = typer.Option(False, "--quick", "-q", help="Quick mode (just log metrics)"),
+) -> None:
+    """Interactive TUI for logging metrics.
+    
+    Opens an interactive prompt for logging multiple metrics.
+    Use --quick for a simpler continuous logging mode.
+    """
+    db = get_db()
+    if quick:
+        quick_log(db)
+    else:
+        interactive_log(db)
 
 
 @app.command()

@@ -109,6 +109,7 @@ class Database:
         name: str | None = None,
         from_date: str | None = None,
         to_date: str | None = None,
+        source: str | None = None,
     ) -> list[MetricRecord]:
         """Query metrics with optional filters.
         
@@ -116,11 +117,12 @@ class Database:
             name: Filter by metric name.
             from_date: Filter by start date (inclusive).
             to_date: Filter by end date (inclusive).
+            source: Filter by source (e.g., 'manual', 'health').
             
         Returns:
             List of MetricRecord objects.
         """
-        query = "SELECT date, metric_name, value, source FROM metrics WHERE 1=1"
+        query = "SELECT rowid as id, date, metric_name, value, source FROM metrics WHERE 1=1"
         params: list = []
         
         if name:
@@ -132,6 +134,9 @@ class Database:
         if to_date:
             query += " AND date <= ?"
             params.append(to_date)
+        if source:
+            query += " AND source = ?"
+            params.append(source)
         
         query += " ORDER BY date"
         
@@ -142,9 +147,26 @@ class Database:
                 metric_name=row["metric_name"],
                 value=row["value"],
                 source=row["source"],
+                id=row["id"],
             )
             for row in cursor
         ]
+    
+    def delete_metric(self, row_id: int) -> bool:
+        """Delete a metric by its row ID.
+        
+        Args:
+            row_id: SQLite rowid of the metric.
+            
+        Returns:
+            True if deleted, False if not found.
+        """
+        cursor = self.conn.execute(
+            "DELETE FROM metrics WHERE rowid = ?",
+            (row_id,)
+        )
+        self.conn.commit()
+        return cursor.rowcount > 0
     
     def get_metrics_df(
         self,
