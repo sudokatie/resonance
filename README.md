@@ -25,7 +25,7 @@ resonance report
 
 ## Features
 
-- **Multiple data sources** - Apple Health, Google Fit, Fitbit, Oura Ring
+- **Multiple data sources** - Apple Health, Google Fit, Fitbit, Oura Ring, Withings
 - **Manual logging** - Mood, energy, custom metrics
 - **Correlation analysis** - Find what affects what
 - **Lagged effects** - Does X today affect Y tomorrow?
@@ -108,9 +108,23 @@ resonance ingest oura --days 30
 
 Imports: sleep metrics (hours, efficiency, deep/REM/light sleep, HRV), readiness score, temperature deviation, steps, calories, distance.
 
+#### Withings
+
+Register an app at [Withings Developer](https://developer.withings.com/) to get OAuth credentials:
+
+```bash
+# First time - opens browser for authorization
+resonance ingest withings --client-id YOUR_ID --client-secret YOUR_SECRET
+
+# After authorization, credentials are saved
+resonance ingest withings --days 30
+```
+
+Imports: weight, blood pressure (systolic/diastolic), heart rate, body composition (fat ratio, muscle mass, hydration), sleep metrics (total, deep, light, REM, score, heart rate during sleep, breathing disturbances, snoring).
+
 #### API Sources Dependencies
 
-Google Fit, Fitbit, and Oura require the `httpx` library:
+Google Fit, Fitbit, Oura, and Withings require the `httpx` library:
 
 ```bash
 pip install "resonance[api]"

@@ -17,6 +17,7 @@ from .tui import interactive_log, quick_log
 from .ingest.google_fit import import_google_fit
 from .ingest.fitbit import import_fitbit
 from .ingest.oura import import_oura
+from .ingest.withings import import_withings
 from .analysis.correlation import find_all_correlations
 from .models import PatternRecord
 from .report.generator import generate_report, format_text, format_json, format_markdown
@@ -61,7 +62,7 @@ def main(
 
 @app.command()
 def ingest(
-    source: str = typer.Argument(..., help="Data source (health, google-fit, fitbit, oura)"),
+    source: str = typer.Argument(..., help="Data source (health, google-fit, fitbit, oura, withings)"),
     path: Optional[str] = typer.Argument(None, help="Path to data file (health only)"),
     days: int = typer.Option(30, "--days", "-d", help="Days of history to import (API sources)"),
     client_id: Optional[str] = typer.Option(None, "--client-id", help="OAuth client ID"),
@@ -80,12 +81,15 @@ def ingest(
     - google-fit: Google Fit API (requires OAuth)
     - fitbit: Fitbit API (requires OAuth)
     - oura: Oura Ring API (requires personal access token)
+    - withings: Withings API (requires OAuth)
     
-    For OAuth sources (google-fit, fitbit), provide --client-id and --client-secret
+    For OAuth sources (google-fit, fitbit, withings), provide --client-id and --client-secret
     for initial authentication. Credentials are saved for future use.
     
     For Oura, get a personal access token from https://cloud.ouraring.com/personal-access-tokens
     and provide it with --token.
+    
+    For Withings, register an app at https://developer.withings.com/ to get credentials.
     """
     db = get_db()
 
@@ -163,9 +167,28 @@ def ingest(
             console.print(f"[red]{e}[/red]")
             raise typer.Exit(1)
     
+    elif source == "withings":
+        try:
+            if verbose:
+                console.print(f"[blue]Importing {days} days from Withings...[/blue]")
+            count = import_withings(
+                db, days=days, client_id=client_id, client_secret=client_secret,
+                dry_run=dry_run, verbose=verbose, console=console if verbose else None
+            )
+            if dry_run:
+                console.print(f"[yellow]Would import {count} daily metrics[/yellow]")
+            else:
+                console.print(f"[green]Imported {count} daily metrics from Withings[/green]")
+        except ImportError as e:
+            console.print(f"[red]{e}[/red]")
+            raise typer.Exit(1)
+        except ValueError as e:
+            console.print(f"[red]{e}[/red]")
+            raise typer.Exit(1)
+    
     else:
         console.print(f"[red]Unknown source: {source}[/red]")
-        console.print("Supported sources: health, google-fit, fitbit, oura")
+        console.print("Supported sources: health, google-fit, fitbit, oura, withings")
         raise typer.Exit(1)
 
 
