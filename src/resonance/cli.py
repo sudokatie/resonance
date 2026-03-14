@@ -425,5 +425,148 @@ def status() -> None:
         console.print(f"Last Analysis: {last_analysis}")
 
 
+@app.command()
+def sleep(
+    date_str: Optional[str] = typer.Argument(None, help="Date (YYYY-MM-DD, defaults to today)"),
+    days: int = typer.Option(7, "--days", "-d", help="Number of days for trend (use with --trend)"),
+    trend: bool = typer.Option(False, "--trend", "-t", help="Show trend over period"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Show sleep quality score.
+    
+    Calculates a composite sleep score based on:
+    - Duration (how long you slept)
+    - Efficiency (time asleep vs time in bed)
+    - Stages (deep, REM, light sleep balance)
+    
+    Example:
+        resonance sleep              # Today's score
+        resonance sleep 2026-03-10   # Specific date
+        resonance sleep --trend      # 7-day trend
+        resonance sleep --trend -d 30  # 30-day trend
+    """
+    from datetime import datetime, timedelta
+    from .analysis.sleep import (
+        get_sleep_score_for_date,
+        get_sleep_scores_for_range,
+        get_sleep_trend,
+        format_sleep_report,
+    )
+    
+    db = get_db()
+    
+    if trend:
+        # Show trend over period
+        end = datetime.now().date()
+        start = end - timedelta(days=days - 1)
+        
+        scores = get_sleep_scores_for_range(
+            db,
+            start.isoformat(),
+            end.isoformat(),
+        )
+        
+        if not scores:
+            console.print("[yellow]No sleep data found for the period.[/yellow]")
+            raise typer.Exit(1)
+        
+        trend_data = get_sleep_trend(scores)
+        
+        if json_output:
+            import json
+            output = {
+                "period_days": days,
+                "scores": [
+                    {
+                        "date": s.date,
+                        "total_score": round(s.total_score, 1),
+                        "rating": s.rating,
+                        "duration_hours": round(s.duration_hours, 1),
+                    }
+                    for s in scores
+                ],
+                "trend": trend_data,
+            }
+            console.print(json.dumps(output, indent=2))
+        else:
+            # Text output with ASCII chart
+            console.print(f"[bold]Sleep Quality Trend ({days} days)[/bold]")
+            console.print("=" * 40)
+            console.print()
+            
+            table = Table(show_header=True)
+            table.add_column("Date")
+            table.add_column("Score", justify="right")
+            table.add_column("Rating")
+            table.add_column("Duration")
+            table.add_column("Chart", width=20)
+            
+            max_score = max(s.total_score for s in scores)
+            
+            for s in scores:
+                bar_len = int((s.total_score / max(max_score, 1)) * 15)
+                bar = "=" * bar_len
+                
+                # Color code the rating
+                if s.total_score >= 85:
+                    rating_style = "[green]"
+                elif s.total_score >= 70:
+                    rating_style = "[blue]"
+                elif s.total_score >= 55:
+                    rating_style = "[yellow]"
+                else:
+                    rating_style = "[red]"
+                
+                table.add_row(
+                    s.date,
+                    f"{s.total_score:.0f}",
+                    f"{rating_style}{s.rating}[/]",
+                    f"{s.duration_hours:.1f}h",
+                    bar,
+                )
+            
+            console.print(table)
+            console.print()
+            console.print(f"Average: {trend_data['average']:.0f}/100")
+            console.print(f"Trend: {trend_data['direction']} ({trend_data['change']:+.1f})")
+            console.print(f"Best: {trend_data['best_score']:.0f} | Worst: {trend_data['worst_score']:.0f}")
+    else:
+        # Single day score
+        if date_str:
+            target_date = date_str
+        else:
+            target_date = datetime.now().date().isoformat()
+        
+        score = get_sleep_score_for_date(db, target_date)
+        
+        if not score:
+            console.print(f"[yellow]No sleep data found for {target_date}.[/yellow]")
+            raise typer.Exit(1)
+        
+        if json_output:
+            import json
+            output = {
+                "date": score.date,
+                "total_score": round(score.total_score, 1),
+                "rating": score.rating,
+                "duration_score": round(score.duration_score, 1),
+                "efficiency_score": round(score.efficiency_score, 1),
+                "stages_score": round(score.stages_score, 1),
+                "duration_hours": round(score.duration_hours, 1),
+                "efficiency": round(score.efficiency, 1),
+            }
+            if score.stages:
+                output["stages"] = {
+                    "deep_hours": round(score.stages.deep_hours, 1),
+                    "rem_hours": round(score.stages.rem_hours, 1),
+                    "light_hours": round(score.stages.light_hours, 1),
+                    "deep_percent": round(score.stages.deep_percent, 1),
+                    "rem_percent": round(score.stages.rem_percent, 1),
+                }
+            console.print(json.dumps(output, indent=2))
+        else:
+            console.print(format_sleep_report(score))
+
+
 if __name__ == "__main__":
     app()
